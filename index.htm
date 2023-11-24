@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OROCHIMARU TSSSSSS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .startBtn {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            height: 45px;
+            width: 100px;
+            background-color: rgb(228, 143, 143);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            border: 1px solid white;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: .3s;
+        }
+
+        .startBtn:hover {
+            background-color: white;
+            color: rgb(228, 143, 143);
+            border-color: rgb(228, 143, 143);
+            transition: .3s;
+        }
+
+        #highestScore {
+            position: fixed;
+            top: 30px;
+            left: 40px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: bold;
+        }
+
+        #score {
+            position: fixed;
+            top: 80px;
+            left: 40px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div id="highestScore">Highest score: </div>
+        <div id="score"> Score: 0</div>
+
+        <canvas id="board">
+
+
+
+        </canvas>
+    </div>
+
+    <script>
+
+        const board = document.querySelector("#board");
+        const highestScore = document.querySelector("#highestScore");
+        const score = document.querySelector("#score");
+
+        const container = document.querySelector(".container");
+        const blockSize = 25
+        const rows = 20
+        const columns = 20
+        const context = board.getContext("2d")
+
+        var snakeX = blockSize * 9
+        var snakeY = blockSize * 9
+        var particleX
+        var particleY
+
+        var velocityX = 0
+        var velocityY = 0
+
+        var snakeSegments = []
+
+        var gameOver = false
+
+        var intervalId
+
+        var myScore = 0
+        var myHighestScore = localStorage.getItem('snakeHighestScore', myHighestScore);
+
+
+
+
+
+
+
+        function start() {
+
+            var startBtn = document.createElement("button");
+            startBtn.innerHTML = "START";
+            startBtn.classList.add("startBtn")
+            container.appendChild(startBtn);
+            startBtn.addEventListener("click", (event) => {
+                gameStart(event);
+            });
+
+            myHighestScore = localStorage.getItem('snakeHighestScore') || 0;
+            highestScore.innerHTML = "Highest Score: " + myHighestScore;
+
+        }
+
+        start();
+
+        function restart() {
+            clearInterval(intervalId);
+            snakeX = blockSize * 5;
+            snakeY = blockSize * 5;
+            particleX = null;
+            particleY = null;
+            velocityX = 0;
+            velocityY = 0;
+            snakeSegments = [];
+            gameOver = false;
+
+            if (myScore > myHighestScore) {
+                myHighestScore = myScore;
+                localStorage.setItem('snakeHighestScore', myHighestScore);
+            }
+            myScore = 0;
+            score.innerHTML = "Score: " + myScore;
+
+            start();
+        }
+
+
+        window.onload = () => {
+            if (myHighestScore == "undefined") {
+                localStorage.setItem('snakeHighestScore', 0);
+            }
+        }
+
+        function gameStart(event) {
+            var startBtn = event.target;
+            board.height = rows * blockSize;
+            board.width = columns * blockSize;
+            board.style.border = "10px solid grey"
+
+            particle();
+            document.addEventListener("keydown", direction);
+            intervalId = setInterval(update, 100);
+
+            container.removeChild(startBtn);
+        }
+
+
+        function update() {
+            if (gameOver) {
+                if (myScore > myHighestScore) {
+                    myHighestScore = myScore;
+                    localStorage.setItem('snakeHighestScore', myHighestScore);
+                }
+                return
+
+            }
+            context.fillStyle = "white"
+            context.fillRect(0, 0, board.width, board.height)
+
+            context.fillStyle = "red"
+            context.fillRect(particleX, particleY, blockSize, blockSize)
+
+            if (
+                snakeX < particleX + blockSize &&
+                snakeX + blockSize > particleX &&
+                snakeY < particleY + blockSize &&
+                snakeY + blockSize > particleY
+            ) {
+                snakeSegments.push([particleX, particleY]);
+                particle();
+                myScore++
+
+                console.log(myScore)
+                score.innerHTML = "Score: " + myScore
+
+            }
+
+            for (let i = snakeSegments.length - 1; i > 0; i--) {
+                snakeSegments[i] = snakeSegments[i - 1]
+
+            }
+
+            if (snakeSegments.length) {
+                snakeSegments[0] = [snakeX, snakeY]
+            }
+
+            context.fillStyle = "rgb(189, 189, 245)"
+
+            snakeX += velocityX * blockSize
+            snakeY += velocityY * blockSize
+            context.fillRect(snakeX, snakeY, blockSize, blockSize)
+            context.strokeStyle = "black";
+            context.lineWidth = 1;
+            context.strokeRect(
+                snakeX + context.lineWidth / 2,
+                snakeY + context.lineWidth / 2,
+                blockSize - context.lineWidth,
+                blockSize - context.lineWidth
+            );
+
+            for (let i = 0; i < snakeSegments.length; i++) {
+
+                context.fillStyle = "rgb(233, 146, 146)"
+                context.fillRect(snakeSegments[i][0], snakeSegments[i][1], blockSize, blockSize)
+                context.strokeStyle = "black";
+                context.lineWidth = 1;
+                context.strokeRect(
+                    snakeSegments[i][0] + context.lineWidth / 2,
+                    snakeSegments[i][1] + context.lineWidth / 2,
+                    blockSize - context.lineWidth,
+                    blockSize - context.lineWidth
+                );
+            }
+
+
+
+            if (snakeX < 0) {
+                snakeX = columns * blockSize - blockSize
+            }
+            if (snakeX > columns * blockSize - blockSize) {
+                snakeX = 0
+            }
+            if (snakeY < 0) {
+                snakeY = rows * blockSize - blockSize
+            }
+            if (snakeY > rows * blockSize - blockSize) {
+                snakeY = 0
+            }
+
+            for (let i = 0; i < snakeSegments.length; i++) {
+                if (snakeX == snakeSegments[i][0] && snakeY == snakeSegments[i][1]) {
+                    gameOver = true
+                    restart()
+                }
+
+            }
+
+
+        }
+
+
+        function particle() {
+            particleX = Math.floor(Math.random() * columns) * blockSize
+            particleY = Math.floor(Math.random() * rows) * blockSize
+        }
+
+        function direction(e) {
+            if (e.code == "ArrowUp" && velocityY != 1) {
+                velocityX = 0
+                velocityY = -1
+
+            }
+            else if (e.code == "ArrowDown" && velocityY != -1) {
+                velocityX = 0
+                velocityY = 1
+
+            }
+            else if (e.code == "ArrowLeft" && velocityX != 1) {
+                velocityX = -1
+                velocityY = 0
+
+            }
+            else if (e.code == "ArrowRight" && velocityX != -1) {
+                velocityX = 1
+                velocityY = 0
+
+            }
+
+        }
+    </script>
+</body>
+
+</html>
